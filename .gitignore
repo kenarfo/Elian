@@ -1,0 +1,114 @@
+__pycache__/
+*.py[cod]
+
+.env
+.env.*
+!.env.example
+Data/secrets.json
+Data/companion_devices.json
+Data/*.log
+
+# Self-Improvement System: throwaway generated code (never committed)
+Data/self_improve/sandbox/
+Data/self_improve/*.tmp
+
+Sounds/*.wav
+elian_*.wav
+
+# Local Windows/system artifacts
+/%SystemDrive%/
+.freebuff/
+
+# Temporary audit and patch scripts
+/_patch*.py
+/_qa_patch*.py
+/_tmp*.py
+/_probe*.py
+/_discover*.txt
+/_dump*.txt
+/_write*.py
+/_goal_audit*
+/_qa_*.py
+/_repro_*.py
+/_smoke_stubs/
+
+# Local test output
+/unittest_*.txt
+
+
+# Local runtime data and personal memory
+/Data/*.json
+!/Data/*.example.json
+
+# Temporary audit, debugging and patch files
+/_goal_oriented_audit_harness.py
+/_probe*.txt
+/_discover*.txt
+/_dump*.txt
+/_write*.py
+/unittest_*.txt
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Blender backups and binary assets
+/BlenderBackups/
+
+# Temporary audit files still present at project root
+/_patch*.py
+/_qa_*.py
+/_tmp*.py
+/_probe*.py
+/_repro_*.py
+/_goal_oriented_audit_harness.py
+/_probe*.txt
+/_discover*.txt
+/_dump*.txt
+/_goal_audit*
+/unittest_*.txt
+
+# Elian self-improvement runtime state
+/Data/self_improve/checkpoints/
+/Data/self_improve/cycles/
+/Data/self_improve/sandbox/
+/Data/self_improve/*.json
+
+# Multi-agent runtime state
+/Data/multi_agent/
+
+# Generated Elian diagnostics and test artifacts
+/Data/diagnostics/*.txt
+/Data/diagnostics/*.wav
+/Data/diagnostics/*.log
+/Data/diagnostics/*snapshot*
+/Data/diagnostics/**/snapshots/
+/Data/diagnostics/**/runtime_snapshot*
+
+# Generated behavioral diagnostics
+/Data/diagnostics/jarvis_behavioral/*.json
+
+# Generated voice parity artifacts
+/Data/diagnostics/jarvis_parity/*.wav
+/Data/diagnostics/jarvis_parity/*.json
+/Data/diagnostics/jarvis_parity/*.md
+/Data/diagnostics/jarvis_parity/*.txt
+
+# Generated JSON diagnostic results
+/Data/diagnostics/**/*.json
+
+# Accidentally copied Windows system cache directories
+**/%SystemDrive%/
+
+/Data/diagnostics/_*.py
+/Data/diagnostics/__pycache__/
+
+# Temporary diagnostic scripts and Python cache
+/Data/diagnostics/_*.py
+/Data/diagnostics/**/__pycache__/
+
+# Accidentally copied Windows system cache directories
+**/%SystemDrive%/
+.venv/

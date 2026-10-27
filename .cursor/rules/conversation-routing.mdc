@@ -1,0 +1,19 @@
+---
+description: Conversation routing — FastPath vs Agent, pending clarification, wake strip, ACK
+globs: "core/conversation_manager.py,core/fast_path.py,core/clarification_policy.py,core/utterance.py,core/text_pipeline.py"
+alwaysApply: false
+---
+
+# Conversation routing
+
+- Order: control/ACK → analysis → **Semantic Executive** → **Cognitive Core** → context → **Goal/ActionLoop** → **Agent (default)** → FastPath only if confidence ≥ 0.90 AND obvious deterministic → legacy → Brain.
+- Agent is the intelligence path. FastPath is a narrow optimization (volume / clear APP / briefings), not a competing brain.
+- Smart-home / soft goals / follow-ups go through Agent + DeviceResolver (any HA brand), not brand-specific skills.
+- Understand first, act second. Context resolves referents; it does not invent intent.
+- TALK/ANSWER is a successful path (jokes, explanations), not a command-miss fallback.
+- Pure acknowledgements (`Ok.`, `Dzięki.`, `Spoko.`) short-circuit: **zero Planner, zero tools**.
+- Pending clarification: if new text is a **complete** intent ≠ UNKNOWN → `pending.clear(reason="new_complete_intent")` and start a new goal. Do not merge as `Użytkownik uzupełnił:`.
+- Clarification answers (short yes/app name/time) merge only when they fit the pending question.
+- Wake-prefix cleanup (`strip_session_wake`) applies in **active session** too (`Elian, …` → content). Do not strip `Elian` inside normal content.
+- FastPath must not swallow multi-step goals that Agent should execute as 2+ tools.
+- Classify merged clarification goals from the full goal text, not only the short follow-up token.

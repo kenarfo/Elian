@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Dynamiczna</title>
+</head>
+<body>
+  <h1>Treść dynamiczna</h1>
+  <p id="status">Ładowanie…</p>
+  <button type="button" id="reveal" aria-label="Pokaż opóźniony">Pokaż opóźniony</button>
+  <div id="slot"></div>
+  <script>
+    document.getElementById('reveal').addEventListener('click', function () {
+      document.getElementById('status').textContent = 'Czekam…';
+      setTimeout(function () {
+        var box = document.getElementById('slot');
+        box.innerHTML = '<p id="delayed">Element opóźniony jest widoczny.</p>' +
+          '<button type="button" id="late-btn" aria-label="Akcja późna">Akcja późna</button>';
+        document.getElementById('status').textContent = 'Gotowe';
+      }, 350);
+    });
+  </script>
+</body>
+</html>

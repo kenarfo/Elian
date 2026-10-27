@@ -1,0 +1,13 @@
+---
+description: RC validation campaign — resume/merge, diagnostics artifacts, smoke before mic
+globs: "core/rc_validation/**,Data/diagnostics/**,RC_*.md,main.py"
+alwaysApply: false
+---
+
+# RC validation
+
+- Campaign is **resume/merge**, never wipe history. Use merge/backfill helpers; preserve stamped `rc_validation_<timestamp>.json`.
+- Artifacts live under `Data/diagnostics/`. Update `RC_REGRESSION_RETEST.md` when fixing campaign FAILs.
+- Hardware mic RC only after `python main.py --agent-smoke` PASSes (and full unittest when Agent/Planner changed).
+- Prefer root-cause fixes that clear many FAILs; avoid one-off integration bandaids unless the phase says so.
+- CLI: `python main.py --rc-validation`, `--rc-merge-campaign`, `--debug-transcripts` only when privacy allows.

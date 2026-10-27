@@ -1,0 +1,13 @@
+---
+description: Polish voice UX — short TTS, barge-in safety, wake/STT text pipeline
+globs: "voice/**,Wake*.py,Voice*.py,core/text_pipeline.py,core/crash_log.py"
+alwaysApply: false
+---
+
+# Voice / Polish UX
+
+- Spoken replies stay short (prefer first sentence). No tool dumps or long English explanations via TTS.
+- Barge-in / `stop_speaking` must not take down the process; log crashes to `runtime_crash_*.json` via crash helpers.
+- Preserve semantic user text through preprocessing; do not drop app/artist/query slots while normalizing.
+- Acoustic wake preferred; legacy STT wake is fallback only — do not “fix” by removing wake policy without a phase.
+- Session idle / end phrases clear pending interactions cleanly.

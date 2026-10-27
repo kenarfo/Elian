@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Elian — Phone Companion (test)</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; background: #111; color: #eee; }
+    body { max-width: 42rem; margin: 1.5rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.2rem; }
+    section { border: 1px solid #333; border-radius: 8px; padding: 0.8rem 1rem; margin: 0.8rem 0; }
+    input, textarea, button { font: inherit; padding: 0.4rem 0.6rem; margin: 0.2rem 0; }
+    button { cursor: pointer; }
+    .row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .ok { color: #8f8; }
+    .bad { color: #f88; }
+    #events { white-space: pre-wrap; font-size: 0.9rem; }
+    .hint { color: #aaa; font-size: 0.85rem; }
+    .disabled { opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <h1>Elian — klient testowy telefonu</h1>
+  <p class="hint">Ten sam mózg co głos. Kamera, lokalizacja i handoff PC↔telefon są wyłączone. Token tylko w localStorage przeglądarki — nie w tym pliku.</p>
+
+  <section>
+    <strong>Status:</strong> <span id="conn">sprawdzam…</span>
+    <div class="hint" id="health"></div>
+  </section>
+
+  <section>
+    <h2>Parowanie</h2>
+    <p class="hint">Na PC: <code>python -m core.companion pair</code> albo przycisk (tylko localhost).</p>
+    <div class="row">
+      <button type="button" id="btnPairStart">Rozpocznij parowanie (PC)</button>
+      <span id="pairCode"></span>
+    </div>
+    <div class="row">
+      <input id="code" placeholder="Kod 6 cyfr" maxlength="8"/>
+      <input id="devName" placeholder="Nazwa telefonu" value="Test"/>
+      <button type="button" id="btnPair">Sparuj</button>
+      <button type="button" id="btnUnpair">Odłącz</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Komenda</h2>
+    <div class="row">
+      <input id="cmd" style="flex:1" placeholder="np. Jaka jest pogoda?"/>
+      <button type="button" id="btnSend">Wyślij</button>
+    </div>
+    <div class="row">
+      <button type="button" data-qa="notifications">Powiadomienia</button>
+      <button type="button" data-qa="weather">Pogoda</button>
+      <button type="button" data-qa="mute">Wycisz</button>
+      <button type="button" data-qa="unmute">Włącz powiadomienia</button>
+    </div>
+    <p id="reply"></p>
+    <div class="hint" id="corr"></div>
+    <div class="row">
+      <label>Audio WAV (opcjonalnie): <input type="file" id="wav" accept="audio/wav"/></label>
+      <button type="button" id="btnAudio">Wyślij nagranie</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Powiadomienia</h2>
+    <div id="events">(brak)</div>
+  </section>
+
+  <section class="disabled">
+    <h2>Później</h2>
+    <p>Kamera — niedostępna. Lokalizacja — niedostępna. Handoff / „jestem w drodze” — niedostępne.</p>
+  </section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CMD_TIMEOUT_MS = 28000;
+let token = localStorage.getItem("elian_companion_token") || "";
+let deviceId = localStorage.getItem("elian_companion_device") || "";
+
+function newRequestId() {
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "req_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+}
+
+function headers(json) {
+  const h = {};
+  if (json) h["Content-Type"] = "application/json";
+  if (token) h["Authorization"] = "Bearer " + token;
+  if (deviceId) h["X-Elian-Device-Id"] = deviceId;
+  return h;
+}
+
+async function api(method, path, body, timeoutMs) {
+  const opts = { method, headers: headers(body !== undefined) };
+  if (body !== undefined) opts.body = typeof body === "string" ? body : JSON.stringify(body);
+  const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  if (ctrl) {
+    opts.signal = ctrl.signal;
+    setTimeout(() => ctrl.abort(), timeoutMs || 12000);
+  }
+  try {
+    const res = await fetch(path, opts);
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) return res.json();
+    return { ok: res.ok, status: res.status };
+  } catch (e) {
+    const offline = (e && e.name === "AbortError")
+      ? "Timeout — Elian nie odpowiedział na czas."
+      : "Brak połączenia z Elianem. Sprawdź sieć / companion.enabled.";
+    return { ok: false, status: "unavailable", error: offline, offline: true };
+  }
+}
+
+function showConn(text, ok) {
+  $("conn").textContent = text;
+  $("conn").className = ok ? "ok" : "bad";
+}
+
+function showReply(j) {
+  $("reply").textContent = (j.data && j.data.reply) || j.error || "";
+  const cid = (j.data && j.data.correlation_id) || "";
+  $("corr").textContent = cid ? ("correlation_id: " + cid + (j.data && j.data.duplicate ? " (duplikat)" : "")) : "";
+}
+
+async function refreshHealth() {
+  try {
+    const j = await api("GET", "/v1/health");
+    const enabled = j.data && j.data.enabled;
+    $("health").textContent = enabled ? "Companion włączony." : (j.error || "Companion wyłączony.");
+    if (!enabled) { showConn("wyłączony", false); return; }
+    if (!token) { showConn("niesparowany", false); return; }
+    const st = await api("GET", "/v1/status");
+    if (!st.ok) {
+      showConn(st.offline ? "offline / reconnect" : "brak autoryzacji", false);
+      return;
+    }
+    const muted = st.data && st.data.device && st.data.device.muted;
+    showConn(muted ? "online (wyciszony)" : "online", true);
+    await pollEvents();
+  } catch (e) {
+    showConn("brak połączenia", false);
+  }
+}
+
+async function pollEvents() {
+  if (!token) return;
+  const j = await api("GET", "/v1/events");
+  if (!j.ok) return;
+  const rows = (j.data && j.data.events) || [];
+  $("events").textContent = rows.length
+    ? rows.map(e => (e.title || e.type) + ": " + (e.body || "")).join("\n")
+    : "(brak)";
+  if (rows.length) {
+    await api("POST", "/v1/events/ack", { ids: rows.map(e => e.id) });
+  }
+}
+
+$("btnPairStart").onclick = async () => {
+  const j = await api("POST", "/v1/pair/start", {});
+  if (j.ok) $("pairCode").textContent = "Kod: " + j.data.pairing_code;
+  else $("pairCode").textContent = j.error || "Tylko z komputera Eliana.";
+};
+
+$("btnPair").onclick = async () => {
+  const j = await api("POST", "/v1/pair", {
+    pairing_code: $("code").value.trim(),
+    name: $("devName").value.trim() || "Telefon",
+    device_id: deviceId || undefined,
+    platform: "test-html",
+  });
+  if (!j.ok) { $("reply").textContent = j.error || "Parowanie nieudane."; return; }
+  token = j.data.token;
+  deviceId = j.data.device_id;
+  localStorage.setItem("elian_companion_token", token);
+  localStorage.setItem("elian_companion_device", deviceId);
+  $("reply").textContent = "Sparowano: " + deviceId;
+  refreshHealth();
+};
+
+$("btnUnpair").onclick = async () => {
+  if (!deviceId) { $("reply").textContent = "Brak device_id."; return; }
+  const j = await api("POST", "/v1/pair/revoke", { device_id: deviceId });
+  token = "";
+  localStorage.removeItem("elian_companion_token");
+  localStorage.removeItem("elian_companion_device");
+  $("reply").textContent = j.ok ? ("Odłączono: " + deviceId) : (j.error || "Revoke nieudany.");
+  deviceId = "";
+  refreshHealth();
+};
+
+$("btnSend").onclick = async () => {
+  const request_id = newRequestId();
+  const j = await api("POST", "/v1/command", { text: $("cmd").value, request_id }, CMD_TIMEOUT_MS);
+  showReply(j);
+};
+
+document.querySelectorAll("[data-qa]").forEach(btn => {
+  btn.onclick = async () => {
+    const j = await api("POST", "/v1/quick-action", {
+      id: btn.getAttribute("data-qa"),
+      request_id: newRequestId(),
+    }, CMD_TIMEOUT_MS);
+    showReply(j);
+    refreshHealth();
+  };
+});
+
+$("btnAudio").onclick = async () => {
+  const f = $("wav").files[0];
+  if (!f) { $("reply").textContent = "Wybierz plik WAV."; return; }
+  const res = await fetch("/v1/audio", {
+    method: "POST",
+    headers: Object.assign(headers(false), { "X-Request-Id": newRequestId() }),
+    body: f,
+  });
+  const j = await res.json();
+  showReply({
+    ok: j.ok,
+    error: j.error,
+    data: {
+      reply: (j.data && (j.data.reply || j.data.transcript)) || "",
+      correlation_id: j.data && j.data.correlation_id,
+    },
+  });
+};
+
+refreshHealth();
+setInterval(refreshHealth, 4000);
+</script>
+</body>
+</html>

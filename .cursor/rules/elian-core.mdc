@@ -1,0 +1,14 @@
+---
+description: Elian core — voice assistant architecture, routing, and hard project bans
+alwaysApply: true
+---
+
+# Elian core
+
+- Elian is a **Polish Windows voice assistant**, not a web/API app. Prefer `core/` + ToolRegistry; do not invent FastAPI/React patterns.
+- Canonical routing: FastPath → Agent/Planner → legacy (Skills/Commands/IntentRouter) → Brain. New behavior belongs in FastPath or Agent, not new legacy routes.
+- Config via `Config.get_config_value` / `Data/config.json`. No hardcoded secrets or tokens.
+- User-facing replies: short Polish. Never dump tool catalogs or English capability lists to TTS.
+- Before microphone RC: full `unittest` discover + `python main.py --agent-smoke` must PASS.
+- Do not change `memory_preference`, custom wake `elian.onnx`, or unrelated RC bugs unless the current phase names them.
+- Runtime `Skills/*.py` are Elian plugins — not Cursor skills.

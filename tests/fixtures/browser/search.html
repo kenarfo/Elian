@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Szukaj</title>
+</head>
+<body>
+  <h1>Wyszukiwarka</h1>
+  <input role="searchbox" placeholder="Szukaj" aria-label="Szukaj" data-search="1" id="q">
+  <ul id="results"></ul>
+  <script>
+    function injectResults(query) {
+      var q = String(query || '').trim() || 'wynik';
+      var safe = q.replace(/[<>&]/g, '');
+      document.getElementById('results').innerHTML =
+        '<li><a href="article.html" id="result-0">Wynik: ' + safe + '</a></li>' +
+        '<li><a href="home.html" id="result-1">Inny wynik</a></li>';
+    }
+    var box = document.getElementById('q');
+    box.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') {
+        injectResults(box.value);
+      }
+    });
+  </script>
+</body>
+</html>

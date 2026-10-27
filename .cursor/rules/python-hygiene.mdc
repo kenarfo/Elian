@@ -1,0 +1,15 @@
+---
+description: Python hygiene for Elian — typing, secrets, subprocess, unittest conventions
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python hygiene
+
+- Use `from __future__ import annotations`, dataclasses/enums for public structures, and explicit types on public APIs.
+- Match existing phase headers: `# ELIAN — … (Phase N)`.
+- Never commit secrets, tokens, or raw transcripts when privacy config forbids it.
+- Prefer `subprocess` with argument lists; avoid `shell=True` unless unavoidable and sanitized.
+- Unit tests: `unittest` + `FakeModelClient` / dry `ToolRegistry`. No real mic, HA writes, or side-effect tools in unit tests.
+- Keep changes focused; do not drive-by refactor unrelated modules.
+- Deterministic tests: inject clocks/models; do not depend on live Ollama unless the test/smoke explicitly says so.

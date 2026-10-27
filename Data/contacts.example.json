@@ -1,0 +1,14 @@
+{
+  "contacts": [
+    {
+      "name": "Mama",
+      "aliases": ["mamie", "mama"],
+      "channels": {}
+    },
+    {
+      "name": "Kuba",
+      "aliases": ["kubie", "jakub"],
+      "channels": {}
+    }
+  ]
+}

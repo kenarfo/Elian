@@ -1,0 +1,15 @@
+---
+description: Agent intent contract — intent family, repair, json_retry, UNKNOWN/ACK safety
+globs: "core/planner.py,core/agent.py,core/agent_*.py,core/intent_family.py,core/agent_types.py"
+alwaysApply: false
+---
+
+# Agent intent contract
+
+- Classify `intent_family` **before** Planner. Family is a **binding constraint**, not a hint.
+- Complete intents with known slots may use deterministic shortcuts (`build_deterministic_decision`).
+- **Never:** UNKNOWN/parse failure → `open_app`; ACKNOWLEDGE → tool calls; empty required args → executor.
+- Incomplete UNKNOWN must not run side-effect tools (`open_app`, `play_media`, HA writes, reminder/calendar writes, UI clicks, shutdown).
+- On `json_retry`, log `[AGENT_RAW]` diagnostics; use family-specific retry prompts — never generic open_app clarification fallback.
+- Repair bad clarifications with slots already in the goal (e.g. Spotify already named).
+- Regression: `tests/test_agent_intent_contract.py`, `tests/test_agent_safety.py`, then `python main.py --agent-smoke`.
